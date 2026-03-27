@@ -81,25 +81,61 @@ TOOL_NAME=$(echo "$TOOL_INPUT" | grep -o '"tool_name"[[:space:]]*:[[:space:]]*"[
 FILE_PATH=$(echo "$TOOL_INPUT" | grep -oE '"(file_path|path|file)"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*: *"//' | sed 's/"$//')
 COMMAND=$(echo "$TOOL_INPUT" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*: *"//' | sed 's/"$//')
 
-# Combine all references to check
-REFERENCES="$FILE_PATH $COMMAND"
+# Collect all path references from the tool call.
+# FILE_PATH covers structured fields; COMMAND may contain paths as arguments.
+REFERENCES=()
+[[ -n "$FILE_PATH" ]] && REFERENCES+=("$FILE_PATH")
 
-# Check each protected path against the tool call
-while IFS= read -r protected; do
-    [[ -z "$protected" ]] && continue
+# Extract path-like tokens from command string (anything starting with / or ./ or ../)
+if [[ -n "$COMMAND" ]]; then
+    for token in $COMMAND; do
+        case "$token" in
+            /*|./*|../*)  REFERENCES+=("$token") ;;
+        esac
+    done
+fi
 
-    for ref in $REFERENCES; do
-        [[ -z "$ref" ]] && continue
+# --- Path traversal-safe comparison using realpath -m ---
+# realpath -m resolves the logical absolute path without requiring the file to exist.
+# This defeats traversal attacks like "../../.env" or "foo/../../../secrets/key".
 
-        # Check if the reference contains the protected path
-        if [[ "$ref" == *"$protected"* ]]; then
-            echo "AIRLOCK BLOCKED: Tool '$TOOL_NAME' references protected path '$protected'" >&2
+normalize() {
+    realpath -m -- "$1" 2>/dev/null
+}
+
+# Build array of normalized protected paths (once)
+PROTECTED_NORMALIZED=()
+while IFS= read -r raw_protected; do
+    [[ -z "$raw_protected" ]] && continue
+    norm=$(normalize "$raw_protected")
+    [[ -n "$norm" ]] && PROTECTED_NORMALIZED+=("$norm")
+done <<< "$(extract_protected_paths)"
+
+# Check every reference against every protected path using prefix match
+for ref in "${REFERENCES[@]}"; do
+    [[ -z "$ref" ]] && continue
+    ref_norm=$(normalize "$ref")
+    [[ -z "$ref_norm" ]] && continue
+
+    for protected_norm in "${PROTECTED_NORMALIZED[@]}"; do
+        # Exact match: the reference IS the protected path
+        if [[ "$ref_norm" == "$protected_norm" ]]; then
+            echo "AIRLOCK BLOCKED: Tool '$TOOL_NAME' targets protected path '$protected_norm'" >&2
+            echo "  Requested (normalized): $ref_norm" >&2
             echo "  Governance policy: $GOV_PATH" >&2
-            echo "  To modify protected paths, update the authorization.protected_paths section." >&2
+            exit 2
+        fi
+
+        # Prefix match: the reference is INSIDE a protected directory
+        # Append / to avoid false positives (e.g. /secrets-public matching /secrets)
+        if [[ "$ref_norm" == "${protected_norm}/"* ]]; then
+            echo "AIRLOCK BLOCKED: Tool '$TOOL_NAME' targets path inside protected directory '$protected_norm'" >&2
+            echo "  Requested (normalized): $ref_norm" >&2
+            echo "  Governance policy: $GOV_PATH" >&2
             exit 2
         fi
     done
-done <<< "$(extract_protected_paths)"
+done
 
 # No violations found
 exit 0

@@ -74,9 +74,23 @@ The included `hooks/enforce.sh` is a PreToolUse hook. It reads `protected_paths`
 ```bash
 # Example: pipe a tool call through the hook
 echo '{"tool_name":"Write","file_path":".env"}' | ./hooks/enforce.sh
-# Output: AIRLOCK BLOCKED: Tool 'Write' references protected path '.env'
+# Output: AIRLOCK BLOCKED: Tool 'Write' targets protected path '/abs/path/.env'
 # Exit code: 2 (blocked)
 ```
+
+### Path Traversal Protection
+
+`enforce.sh` normalizes all paths using `realpath -m` before comparison. This prevents agents from bypassing protected paths via directory traversal:
+
+```
+../../.env                      → /absolute/path/.env       → BLOCKED
+foo/../../../secrets/key        → /absolute/path/secrets/key → BLOCKED
+./secrets/../.env               → /absolute/path/.env       → BLOCKED
+```
+
+Both the requested path and the protected path are normalized. Comparison uses a prefix match with a trailing `/` guard, so `/secrets-public/readme.md` does **not** falsely match a `/secrets` rule.
+
+The `-m` flag resolves paths even when the target file does not exist — critical for blocking writes to new files inside protected directories.
 
 ---
 
