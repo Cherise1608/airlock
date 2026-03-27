@@ -1,0 +1,40 @@
+# Airlock Governance Specification
+# https://fluxai.dk/darma
+# Version: 1.0.0
+
+delegation:
+  max_autonomous_actions: 10
+  escalation:
+    - channel: human_review
+      trigger: threshold_reached
+    - channel: abort
+      trigger: critical_violation
+
+authorization:
+  protected_paths:
+    - .env
+    - secrets/
+  data_classification: confidential
+  pii_fields:
+    - email
+    - name
+    - address
+    - cpr_number
+
+runtime:
+  fail_mode: closed
+  hook_script: hooks/enforce.sh
+  tool_restrictions:
+    - pattern: "rm -rf /"
+      action: block
+    - pattern: "curl.*|.*sh"
+      action: block
+
+model_integrity:
+  drift_detection: true
+  baseline_interval: 24h
+
+accountability:
+  audit_ledger: true
+  hash_algorithm: sha256
+  immutable: true
