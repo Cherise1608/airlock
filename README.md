@@ -36,6 +36,7 @@ delegation:
   escalation:
     - channel: human_review
       trigger: threshold_reached
+      endpoint: https://hooks.slack.com/services/T00/B00/xxx
 
 authorization:
   protected_paths:
@@ -94,6 +95,81 @@ The `-m` flag resolves paths even when the target file does not exist — critic
 
 ---
 
+## Standalone CLI Tools
+
+Airlock ships with two standalone CLI tools. No Python. No npm. Pure bash.
+
+### Compliance Reporting
+
+Read the audit ledger and get governance summaries and regulatory compliance status:
+
+```bash
+./airlock-report.sh report
+./airlock-report.sh compliance --framework eu-ai-act
+./airlock-report.sh compliance --framework gdpr
+./airlock-report.sh verify
+```
+
+```
+airlock compliance  |  EU AI Act
+====================================================
+  Entries evaluated:   6
+  Art. 12 coverage:    100% (6/6 actions with audit trail)
+  Art. 14 compliant:   NO (1 escalations triggered)
+====================================================
+```
+
+### Emergency Status
+
+Check whether escalation channels are reachable. If your primary platform goes down, your agents don't stop — they keep running without human oversight. That's an EU AI Act Art. 14 violation in real time.
+
+```bash
+./airlock-status.sh
+./airlock-status.sh --governance /path/to/governance.yaml
+```
+
+```
+airlock status --emergency
+========================================================
+  Escalation Channels
+  ----------------------------------------
+  [X] human_review         DOWN
+      endpoint: https://hooks.slack.com/services/T00/B00/xxx
+      detail:   HTTP 404 (unreachable)
+  [+] abort                UP
+      detail:   Built-in action, always available
+
+  Assessment
+  ----------------------------------------
+  Human oversight available:  NO
+  Governance intact:          NO
+  Action: EMERGENCY — all human oversight channels unreachable.
+          Switch to fail-closed. Halt all autonomous agents.
+
+  Regulatory Impact
+  ----------------------------------------
+  EU AI Act Art. 9:  AT RISK
+  EU AI Act Art. 14: VIOLATION — human oversight unreachable
+========================================================
+```
+
+Supports HTTP, TCP, process, and file/socket endpoint checks. Configure endpoints in `governance.yaml`:
+
+```yaml
+delegation:
+  escalation:
+    - channel: human_review
+      trigger: threshold_reached
+      endpoint: https://hooks.slack.com/services/T00/B00/xxx
+    - channel: backup_comms
+      trigger: primary_down
+      endpoint: https://rocketchat.company.com/api/v1/channels.list
+```
+
+**Exit codes:** `0` = nominal, `1` = degraded, `2` = emergency.
+
+---
+
 ## How It Complements Other Tools
 
 GitAgent defines the agent. Airlock defines the boundaries.
@@ -105,6 +181,23 @@ GitAgent defines the agent. Airlock defines the boundaries.
 | **Airlock** | What the agent **is not allowed to do** (enforced at runtime) |
 
 Airlock without Agent Shield is a policy document. With Agent Shield, it is a firewall.
+
+### Product Architecture
+
+```
+Airlock (spec + CLI)     → Free, standalone, pure bash
+  governance.yaml          Define the rules
+  enforce.sh               Enforce at runtime
+  airlock-report.sh        Compliance reporting
+  airlock-status.sh        Emergency channel checks
+
+Agent Shield (runtime)   → Commercial, binds it all together
+  Real-time scanning       Multi-agent monitoring
+  Drift detection          Behavioral baselines
+  Immutable audit trails   Tamper-proof ledger
+```
+
+Three entry points to the same customer. All free to try. All point to Agent Shield for production.
 
 ---
 
@@ -129,8 +222,10 @@ Links:
 
 ```
 airlock/
-  governance.yaml        # The governance specification
+  governance.yaml        # The governance specification (DARMA)
   validate-governance.sh # Validator (bash, no dependencies)
+  airlock-report.sh      # Compliance reporting CLI (standalone)
+  airlock-status.sh      # Emergency status CLI (standalone)
   hooks/
     enforce.sh           # PreToolUse enforcement hook
   README.md

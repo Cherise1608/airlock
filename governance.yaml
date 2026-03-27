@@ -7,6 +7,10 @@ delegation:
   escalation:
     - channel: human_review
       trigger: threshold_reached
+      endpoint: https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+    - channel: backup_comms
+      trigger: primary_down
+      endpoint: https://your-rocketchat.example.com/api/v1/channels.list
     - channel: abort
       trigger: critical_violation
 
