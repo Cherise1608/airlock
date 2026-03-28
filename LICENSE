@@ -1,12 +1,46 @@
-Commons Clause Condition v1.0
-The right to Sell the Software is not granted.
-Sell means providing the software as a paid product or service.
-Licensor: FluxAI, CVR 46262506, info@fluxai.dk
-
 Business Source License 1.1
-Licensed Work: Airlock
-Licensor: FluxAI
-Change Date: 2030-03-27
-Change License: Apache 2.0
-Additional Use Grant: You may use this for any purpose
-except offering it as a commercial governance service.
+
+Parameters
+
+Licensor:             FluxAI ApS, CVR 46262506, info@fluxai.dk
+Licensed Work:        Airlock v1.0 (including CLI tools: airlock-report.sh, airlock-status.sh, validate-governance.sh)
+Additional Use Grant: You may use the Licensed Work for any purpose except offering
+                      it as a commercial AI governance-as-a-service product that
+                      competes with the Licensor's offerings.
+Change Date:          2030-03-27
+Change License:       Apache License, Version 2.0
+
+For the full text of the Business Source License 1.1, see:
+https://mariadb.com/bsl11/
+
+----------
+
+Commons Clause License Condition v1.0
+
+The Software is provided to you by the Licensor under the License,
+as defined below, subject to the following condition.
+
+Without limiting other conditions in the License, the grant of rights
+under the License will not include, and the License does not grant to
+you, the right to Sell the Software.
+
+For purposes of the foregoing, "Sell" means practicing any or all of
+the rights granted to you under the License to provide to third parties,
+for a fee or other consideration (including without limitation fees for
+hosting or consulting/support services related to the Software), a
+product or service whose value derives, entirely or substantially,
+from the functionality of the Software.
+
+Any license notice or attribution required by the License must also
+include this Commons Clause License Condition notice.
+
+Software:  Airlock
+License:   Business Source License 1.1
+Licensor:  FluxAI ApS, CVR 46262506, info@fluxai.dk
+
+For the full text of the Commons Clause, see:
+https://commonsclause.com/
+
+----------
+
+Copyright (c) 2026 FluxAI ApS. All rights reserved.
