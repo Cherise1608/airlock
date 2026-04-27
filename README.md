@@ -81,17 +81,15 @@ echo '{"tool_name":"Write","file_path":".env"}' | ./hooks/enforce.sh
 
 ### Path Traversal Protection
 
-`enforce.sh` normalizes all paths using `realpath -m` before comparison. This prevents agents from bypassing protected paths via directory traversal:
+`enforce.sh` blocks attempts to bypass protected paths via directory traversal:
 
 ```
-../../.env                      → /absolute/path/.env       → BLOCKED
-foo/../../../secrets/key        → /absolute/path/secrets/key → BLOCKED
-./secrets/../.env               → /absolute/path/.env       → BLOCKED
+../../.env                      → BLOCKED
+foo/../../../secrets/key        → BLOCKED
+./secrets/../.env               → BLOCKED
 ```
 
-Both the requested path and the protected path are normalized. Comparison uses a prefix match with a trailing `/` guard, so `/secrets-public/readme.md` does **not** falsely match a `/secrets` rule.
-
-The `-m` flag resolves paths even when the target file does not exist — critical for blocking writes to new files inside protected directories.
+Protection covers both existing and new files inside protected directories.
 
 ---
 
@@ -153,7 +151,7 @@ airlock status --emergency
 ========================================================
 ```
 
-Supports HTTP, TCP, process, and file/socket endpoint checks. Configure endpoints in `governance.yaml`:
+Configure escalation endpoints in `governance.yaml`:
 
 ```yaml
 delegation:
@@ -190,14 +188,9 @@ Airlock (spec + CLI)     → Free, standalone, pure bash
   enforce.sh               Enforce at runtime
   airlock-report.sh        Compliance reporting
   airlock-status.sh        Emergency channel checks
-
-Agent Shield (runtime)   → Commercial, binds it all together
-  Real-time scanning       Multi-agent monitoring
-  Drift detection          Behavioral baselines
-  Immutable audit trails   Tamper-proof ledger
 ```
 
-Three entry points to the same customer. All free to try. All point to Agent Shield for production.
+For production enforcement, Agent Shield provides runtime governance. See [fluxai.dk/agent-shield](https://fluxai.dk/agent-shield).
 
 ---
 
@@ -205,15 +198,9 @@ Three entry points to the same customer. All free to try. All point to Agent Shi
 
 `governance.yaml` defines the rules. `enforce.sh` demonstrates enforcement as a reference implementation.
 
-For production use, [Agent Shield](https://github.com/FluxAI/agent-shield) provides:
-
-- **Immutable audit trails** — tamper-proof logging of every governance decision
-- **Drift detection** — continuous comparison against behavioral baselines
-- **Multi-agent runtime scanning** — enforcement across agent fleets
-- **Real-time monitoring** — live dashboards and alerting
+For production use, [Agent Shield](https://fluxai.dk/agent-shield) provides runtime governance.
 
 Links:
-- GitHub: [github.com/FluxAI/agent-shield](https://github.com/FluxAI/agent-shield)
 - Product: [fluxai.dk/agent-shield](https://fluxai.dk/agent-shield)
 
 ---
