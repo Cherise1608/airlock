@@ -2,9 +2,8 @@
 # ============================================================
 # Airlock Runtime Enforcement Hook (PreToolUse)
 # ============================================================
-# This is a reference implementation. For production-grade runtime
-# enforcement with drift detection, audit logging, and multi-agent
-# scanning, see Agent Shield: https://github.com/FluxAI/agent-shield
+# This is a reference implementation. For production governance,
+# see Agent Shield: https://fluxai.dk/agent-shield
 # ============================================================
 #
 # Exit codes:
