@@ -78,7 +78,7 @@ Kontrollerer eksekveringsadfærd ved policy-brud.
 Overvåger om agentens adfærd afviger over tid.
 
 - `drift_detection`: Toggle for drift-overvågning
-- `baseline_interval`: Hvor ofte baseline sammenlignes (f.eks. `24h`)
+- `baseline_interval`: Interval for baseline-sammenligning
 
 ### 3.5 Accountability
 Sikrer sporbarhed og revisionsmulighed.
@@ -123,14 +123,9 @@ Airlock (spec + CLI)            → Gratis, standalone, ren bash
   enforce.sh                      Håndhæv ved runtime
   airlock-report.sh               Compliance rapportering
   airlock-status.sh               Emergency kanal-check
-
-Agent Shield (runtime)          → Kommerciel, binder det hele sammen
-  Real-time scanning              Multi-agent overvågning
-  Drift detection                 Adfærds-baselines
-  Immutable audit trails          Tamper-proof ledger
 ```
 
-Tre indgange til samme kunde. Alle gratis at prøve. Alle peger mod Agent Shield for produktion.
+For produktions-håndhævelse leverer Agent Shield runtime governance. Se [fluxai.dk/agent-shield](https://fluxai.dk/agent-shield).
 
 ---
 
@@ -158,22 +153,10 @@ Agent vil kalde tool
   PreToolUse hook → hooks/enforce.sh
         │
         ▼
-  Læs protected_paths fra governance.yaml
+  Sammenlign tool-kald mod governance.yaml
         │
-        ▼
-  Ekstraher path-referencer fra tool call
-  (file_path, path, file felter + path-tokens fra command)
-        │
-        ▼
-  Normaliser BEGGE sider med realpath -m
-  (resolver ../../, ./, symlinks — kræver ikke at filen eksisterer)
-        │
-        ▼
-  Prefix-match: starter normalized path med protected path?
-  (med /-guard mod false positives: /secrets-public ≠ /secrets)
-        │
-        ├── Match  → exit 2 (BLOKERET)
-        └── Ingen  → exit 0 (TILLADT)
+        ├── Beskyttet sti rammes  → exit 2 (BLOKERET)
+        └── Ingen overtrædelse    → exit 0 (TILLADT)
 ```
 
 ---
@@ -193,8 +176,7 @@ Agent vil kalde tool
 ## 7. Sikkerhedsmodel
 
 - **Protected paths** forhindrer adgang til `.env`, `secrets/`, og andre sensitive stier
-- **Path traversal-beskyttelse** via `realpath -m` normalisering — blokerer `../../.env`, `foo/../../../secrets/key`, og lignende omgåelsesforsøg
-- **Prefix-match med `/`-guard** forhindrer false positives (f.eks. `/secrets-public` matcher ikke `/secrets`)
+- **Path traversal-beskyttelse** blokerer omgåelsesforsøg som `../../.env` og lignende
 - **PII-felter** er eksplicit defineret for compliance-synlighed
 - **Immutable audit ledger** sikrer at loggen ikke kan ændres retroaktivt
 - **Drift detection** fanger adfærdsændringer over tid
@@ -202,17 +184,16 @@ Agent vil kalde tool
 
 ### 7.1 Path Traversal Prevention
 
-Enforce.sh bruger `realpath -m` til at normalisere stier før sammenligning:
+Enforce.sh blokerer omgåelsesforsøg via directory traversal:
 
 ```
-Angreb                              → Normaliseret            → Resultat
-../../.env                          → /abs/path/.env          → BLOKERET
-foo/../../../secrets/key            → /abs/path/secrets/key   → BLOKERET
-./secrets/../.env                   → /abs/path/.env          → BLOKERET
-/secrets-public/readme.md           → /secrets-public/...     → TILLADT (/-guard)
+Angreb                              → Resultat
+../../.env                          → BLOKERET
+foo/../../../secrets/key            → BLOKERET
+./secrets/../.env                   → BLOKERET
 ```
 
-Normalisering sker på begge sider (requested path OG protected path) for konsistens. `-m` flaget sikrer at stier til ikke-eksisterende filer stadig kan resolves — vigtigt for write-operationer hvor agenten forsøger at oprette nye filer i beskyttede mapper.
+Beskyttelsen dækker både eksisterende og nye filer i beskyttede mapper.
 
 ---
 
@@ -228,10 +209,6 @@ enforce.sh (reference-implementation)
        │
        ▼
 Agent Shield (production-grade enforcement)
-  - Immutable audit trails
-  - Drift detection
-  - Multi-agent runtime scanning
-  - https://github.com/FluxAI/agent-shield
   - https://fluxai.dk/agent-shield
 ```
 
@@ -250,4 +227,4 @@ Agent Shield (production-grade enforcement)
 
 - DARMA framework: https://fluxai.dk/darma
 - Agent Shield: https://fluxai.dk/agent-shield
-- Repo: https://github.com/Cherise1608/airlock
+- Airlock repo: https://github.com/Cherise1608/airlock
